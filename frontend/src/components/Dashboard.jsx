@@ -728,7 +728,6 @@ export default function Dashboard({ onBackToLanding }) {
           )}
 
         </div>
-        </div>
       </div>
 
       {/* Citation Drawer */}
