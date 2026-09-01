@@ -5,7 +5,7 @@ import {
   Search, Activity, Database, Brain, Cpu, Globe
 } from 'lucide-react';
 
-const API = 'http://127.0.0.1:8000';
+const API = 'http://127.0.0.1:8080';
 
 function SignalBadge({ signal = '' }) {
   const s = signal.toUpperCase();

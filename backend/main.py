@@ -45,6 +45,7 @@ app.add_middleware(
     allow_headers     = ["*"],
 )
 
+
 # ── Singleton service instances ───────────────────────────────────────────────
 _market   = MarketDataProvider()
 _news     = NewsProvider()
