@@ -366,7 +366,7 @@ export default function Dashboard({ onBackToLanding }) {
         {/* ── Scrollable main body ──────────────────────────────── */}
         <div style={{ flex:1, overflowY:'auto', padding:28 }}>
 
-          {/* Alerts */}
+          {/* Alerts — always visible */}
           {synth.conflict_detected && (
             <div style={{ background:'var(--amber-bg)', border:'1px solid var(--amber)', borderRadius:'var(--radius-md)',
               padding:'14px 18px', marginBottom:20, display:'flex', gap:12, alignItems:'center' }}>
@@ -388,241 +388,296 @@ export default function Dashboard({ onBackToLanding }) {
             </div>
           )}
 
-          {/* ── Metric Row ─────────────────────────────────────── */}
-          <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:16, marginBottom:24 }}>
-            {/* Stock price card */}
-            <div className="card" style={{ background:'var(--sidebar-bg)', border:'none' }}>
-              <div style={{ fontSize:11, fontWeight:700, letterSpacing:'0.08em', textTransform:'uppercase', color:'rgba(255,255,255,0.5)', marginBottom:8 }}>
-                {md.symbol} — {md.name}
-              </div>
-              <div style={{ fontFamily:'var(--font-mono)', fontSize:28, fontWeight:800, color:'#fff', letterSpacing:'-0.02em', marginBottom:6 }}>
-                {md.price ? `₹${md.price.toLocaleString('en-IN')}` : '—'}
-              </div>
-              <span className={`delta ${md.change_pct >= 0 ? 'delta-up' : 'delta-down'}`}>
-                {md.change_pct >= 0 ? <ArrowUpRight size={12}/> : <ArrowDownRight size={12}/>}
-                {md.change_pct >= 0 ? '+' : ''}{md.change_pct}%
-              </span>
-            </div>
-
-            {/* Synthesis Signal */}
-            <div className="card">
-              <div className="metric-label">System Signal</div>
-              <div style={{ marginTop:10, marginBottom:10 }}>
-                <SignalPill signal={synth.classification} size="lg" />
-              </div>
-              <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                <div className="progress-track" style={{ flex:1 }}>
-                  <div className="progress-fill" style={{ width:`${Math.round((synth.confidence||0)*100)}%`, background:'var(--teal)' }} />
-                </div>
-                <span style={{ fontSize:12, fontWeight:700 }}>{Math.round((synth.confidence||0)*100)}%</span>
-              </div>
-            </div>
-
-            {/* Agent Agreement */}
-            <div className="card">
-              <div className="metric-label">Agent Agreement</div>
-              <div style={{ fontFamily:'var(--font-mono)', fontSize:22, fontWeight:800, letterSpacing:'-0.02em', marginTop:8, marginBottom:4 }}>
-                {synth.agent_agreement || '—'}
-              </div>
-              <div style={{ fontSize:12, color:'var(--text-muted)' }}>
-                {synth.data_quality && <span className={`badge badge-${synth.data_quality === 'good' ? 'teal' : 'amber'}`}>{synth.data_quality?.toUpperCase()}</span>}
-              </div>
-            </div>
-
-            {/* RSI */}
-            <div className="card">
-              <div className="metric-label">RSI (14-day)</div>
-              <div style={{ fontFamily:'var(--font-mono)', fontSize:28, fontWeight:800, letterSpacing:'-0.03em', marginTop:8, marginBottom:4 }}>
-                {md.rsi_14 || '—'}
-              </div>
-              <div style={{ fontSize:12, color: md.rsi_14 > 65 ? 'var(--green)' : md.rsi_14 < 35 ? 'var(--red)' : 'var(--text-muted)' }}>
-                {md.rsi_14 > 65 ? '↑ Overbought territory' : md.rsi_14 < 35 ? '↓ Oversold territory' : '→ Neutral zone'}
-              </div>
-            </div>
-          </div>
-
-          {/* ── Price Chart + Synthesis ────────────────────────── */}
-          <div style={{ display:'grid', gridTemplateColumns:'1.4fr 1fr', gap:20, marginBottom:24 }}>
-
-            {/* Price sparkline chart */}
-            <div className="card">
-              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
-                <div style={{ fontWeight:700, fontSize:15 }}>{md.symbol} — Price History (30d)</div>
-                <div style={{ fontSize:12, color:'var(--text-muted)' }}>
-                  52W: <span style={{ color:'var(--green)', fontWeight:600 }}>₹{md.high_52w?.toLocaleString('en-IN')}</span> / <span style={{ color:'var(--red)', fontWeight:600 }}>₹{md.low_52w?.toLocaleString('en-IN')}</span>
-                </div>
-              </div>
-              {sparkData.length > 0 ? (
-                <ResponsiveContainer width="100%" height={180}>
-                  <LineChart data={sparkData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                    <XAxis dataKey="day" tick={{ fontSize:10, fill:'var(--text-muted)' }} tickLine={false} axisLine={false} />
-                    <YAxis domain={['auto', 'auto']} tick={{ fontSize:10, fill:'var(--text-muted)' }} tickLine={false} axisLine={false}
-                      tickFormatter={v => `₹${v.toLocaleString('en-IN')}`} width={80} />
-                    <Tooltip
-                      formatter={(v) => [`₹${v.toLocaleString('en-IN')}`, 'Price']}
-                      contentStyle={{ background:'var(--surface)', border:'1px solid var(--border)', borderRadius:8, fontSize:12 }} />
-                    <Line type="monotone" dataKey="price" stroke="var(--teal)" strokeWidth={2} dot={false} />
-                  </LineChart>
-                </ResponsiveContainer>
-              ) : (
-                <div style={{ height:180, display:'flex', alignItems:'center', justifyContent:'center', color:'var(--text-muted)', fontSize:13 }}>
-                  {loading ? <><Spinner /> Loading live data…</> : 'No historical data available'}
-                </div>
-              )}
-
-              {/* Key technical metrics row */}
-              <div style={{ display:'flex', justifyContent:'space-between', marginTop:16, paddingTop:14, borderTop:'1px solid var(--border)' }}>
-                {[
-                  { label:'SMA-50',   val: md.sma_50 ? `₹${md.sma_50.toLocaleString('en-IN')}` : '—' },
-                  { label:'SMA-200',  val: md.sma_200 ? `₹${md.sma_200.toLocaleString('en-IN')}` : '—' },
-                  { label:'MACD',     val: md.macd ? `${md.macd.value > 0 ? '+' : ''}${md.macd.value}` : '—' },
-                  { label:'Volume',   val: md.volume ? `${(md.volume/1000000).toFixed(1)}M` : '—' },
-                  { label:'Vol Ratio',val: md.volume_ratio ? `${md.volume_ratio}×` : '—' },
-                ].map(({ label, val }) => (
-                  <div key={label} style={{ textAlign:'center' }}>
-                    <div style={{ fontSize:10, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:3 }}>{label}</div>
-                    <div style={{ fontSize:13, fontWeight:700, fontFamily:'var(--font-mono)' }}>{val}</div>
+          {/* ══ OVERVIEW ══════════════════════════════════════════════════════ */}
+          {activeNav === 'overview' && (
+            <>
+              {/* Metric Row */}
+              <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:16, marginBottom:24 }}>
+                <div className="card" style={{ background:'var(--sidebar-bg)', border:'none' }}>
+                  <div style={{ fontSize:11, fontWeight:700, letterSpacing:'0.08em', textTransform:'uppercase', color:'rgba(255,255,255,0.5)', marginBottom:8 }}>
+                    {md.symbol} — {md.name}
                   </div>
+                  <div style={{ fontFamily:'var(--font-mono)', fontSize:28, fontWeight:800, color:'#fff', letterSpacing:'-0.02em', marginBottom:6 }}>
+                    {md.price ? `₹${md.price.toLocaleString('en-IN')}` : '—'}
+                  </div>
+                  <span className={`delta ${md.change_pct >= 0 ? 'delta-up' : 'delta-down'}`}>
+                    {md.change_pct >= 0 ? <ArrowUpRight size={12}/> : <ArrowDownRight size={12}/>}
+                    {md.change_pct >= 0 ? '+' : ''}{md.change_pct}%
+                  </span>
+                </div>
+                <div className="card">
+                  <div className="metric-label">System Signal</div>
+                  <div style={{ marginTop:10, marginBottom:10 }}>
+                    <SignalPill signal={synth.classification} size="lg" />
+                  </div>
+                  <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                    <div className="progress-track" style={{ flex:1 }}>
+                      <div className="progress-fill" style={{ width:`${Math.round((synth.confidence||0)*100)}%`, background:'var(--teal)' }} />
+                    </div>
+                    <span style={{ fontSize:12, fontWeight:700 }}>{Math.round((synth.confidence||0)*100)}%</span>
+                  </div>
+                </div>
+                <div className="card">
+                  <div className="metric-label">Agent Agreement</div>
+                  <div style={{ fontFamily:'var(--font-mono)', fontSize:22, fontWeight:800, letterSpacing:'-0.02em', marginTop:8, marginBottom:4 }}>
+                    {synth.agent_agreement || '—'}
+                  </div>
+                  <div style={{ fontSize:12, color:'var(--text-muted)' }}>
+                    {synth.data_quality && <span className={`badge badge-${synth.data_quality === 'good' ? 'teal' : 'amber'}`}>{synth.data_quality?.toUpperCase()}</span>}
+                  </div>
+                </div>
+                <div className="card">
+                  <div className="metric-label">RSI (14-day)</div>
+                  <div style={{ fontFamily:'var(--font-mono)', fontSize:28, fontWeight:800, letterSpacing:'-0.03em', marginTop:8, marginBottom:4 }}>
+                    {md.rsi_14 || '—'}
+                  </div>
+                  <div style={{ fontSize:12, color: md.rsi_14 > 65 ? 'var(--green)' : md.rsi_14 < 35 ? 'var(--red)' : 'var(--text-muted)' }}>
+                    {md.rsi_14 > 65 ? '↑ Overbought territory' : md.rsi_14 < 35 ? '↓ Oversold territory' : '→ Neutral zone'}
+                  </div>
+                </div>
+              </div>
+
+              {/* Price Chart + Synthesis */}
+              <div style={{ display:'grid', gridTemplateColumns:'1.4fr 1fr', gap:20, marginBottom:24 }}>
+                <div className="card">
+                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
+                    <div style={{ fontWeight:700, fontSize:15 }}>{md.symbol} — Price History (30d)</div>
+                    <div style={{ fontSize:12, color:'var(--text-muted)' }}>
+                      52W: <span style={{ color:'var(--green)', fontWeight:600 }}>₹{md.high_52w?.toLocaleString('en-IN')}</span> / <span style={{ color:'var(--red)', fontWeight:600 }}>₹{md.low_52w?.toLocaleString('en-IN')}</span>
+                    </div>
+                  </div>
+                  {sparkData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height={180}>
+                      <LineChart data={sparkData}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                        <XAxis dataKey="day" tick={{ fontSize:10, fill:'var(--text-muted)' }} tickLine={false} axisLine={false} />
+                        <YAxis domain={['auto', 'auto']} tick={{ fontSize:10, fill:'var(--text-muted)' }} tickLine={false} axisLine={false}
+                          tickFormatter={v => `₹${v.toLocaleString('en-IN')}`} width={80} />
+                        <Tooltip
+                          formatter={(v) => [`₹${v.toLocaleString('en-IN')}`, 'Price']}
+                          contentStyle={{ background:'var(--surface)', border:'1px solid var(--border)', borderRadius:8, fontSize:12 }} />
+                        <Line type="monotone" dataKey="price" stroke="var(--teal)" strokeWidth={2} dot={false} />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div style={{ height:180, display:'flex', alignItems:'center', justifyContent:'center', color:'var(--text-muted)', fontSize:13 }}>
+                      {loading ? <><Spinner /> Loading live data…</> : 'No historical data available'}
+                    </div>
+                  )}
+                  <div style={{ display:'flex', justifyContent:'space-between', marginTop:16, paddingTop:14, borderTop:'1px solid var(--border)' }}>
+                    {[
+                      { label:'SMA-50',   val: md.sma_50 ? `₹${md.sma_50.toLocaleString('en-IN')}` : '—' },
+                      { label:'SMA-200',  val: md.sma_200 ? `₹${md.sma_200.toLocaleString('en-IN')}` : '—' },
+                      { label:'MACD',     val: md.macd ? `${md.macd.value > 0 ? '+' : ''}${md.macd.value}` : '—' },
+                      { label:'Volume',   val: md.volume ? `${(md.volume/1000000).toFixed(1)}M` : '—' },
+                      { label:'Vol Ratio',val: md.volume_ratio ? `${md.volume_ratio}×` : '—' },
+                    ].map(({ label, val }) => (
+                      <div key={label} style={{ textAlign:'center' }}>
+                        <div style={{ fontSize:10, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:3 }}>{label}</div>
+                        <div style={{ fontSize:13, fontWeight:700, fontFamily:'var(--font-mono)' }}>{val}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="card" style={{ border:'1px solid var(--teal)', boxShadow:'0 0 0 1px var(--teal-light)' }}>
+                  <div style={{ fontSize:10, fontWeight:700, color:'var(--teal)', textTransform:'uppercase', letterSpacing:'0.1em', marginBottom:6 }}>
+                    SYNTHESIZED INTELLIGENCE
+                  </div>
+                  <div style={{ fontSize:20, fontWeight:800, marginBottom:4 }}>{synth.classification}</div>
+                  <div style={{ fontSize:13, color:'var(--text-secondary)', lineHeight:1.6, marginBottom:16 }}>{synth.summary}</div>
+                  <div style={{ background:'var(--bg)', borderRadius:'var(--radius-md)', padding:'14px 16px', marginBottom:16 }}>
+                    <div style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:6 }}>Recommendation</div>
+                    <div style={{ fontSize:13, fontWeight:700, color:'var(--text-primary)' }}>{synth.action_recommendation}</div>
+                  </div>
+                  {(synth.key_reasons || []).length > 0 && (
+                    <div style={{ marginBottom:16 }}>
+                      <div style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:8 }}>Key Reasons</div>
+                      {synth.key_reasons.map((r, i) => (
+                        <div key={i} style={{ display:'flex', gap:8, alignItems:'flex-start', marginBottom:6 }}>
+                          <ChevronRight size={14} color="var(--teal)" style={{ marginTop:1, flexShrink:0 }} />
+                          <span style={{ fontSize:12, color:'var(--text-secondary)', lineHeight:1.5 }}>{r}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {synth.portfolio_impact && (
+                    <div style={{ background:'var(--teal-light)', borderRadius:'var(--radius-sm)', padding:'12px 14px' }}>
+                      <div style={{ fontSize:11, fontWeight:700, color:'var(--teal-dark)', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:4 }}>Portfolio Impact</div>
+                      <div style={{ fontSize:12, color:'var(--teal-dark)', lineHeight:1.5 }}>{synth.portfolio_impact}</div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* ══ SIGNALS ═══════════════════════════════════════════════════════ */}
+          {activeNav === 'signals' && (
+            <>
+              <div style={{ marginBottom:24 }}>
+                <div style={{ fontSize:13, color:'var(--text-secondary)', marginBottom:20 }}>
+                  Real-time signal output from all three specialist agents for <strong>{md.symbol || selectedSym}</strong>.
+                </div>
+                <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:16 }}>
+                  {Object.entries(agents).map(([key, agent]) => (
+                    <AgentCard key={key} agent={agent} onCitation={handleCitation} />
+                  ))}
+                </div>
+              </div>
+              <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:16 }}>
+                <div className="card">
+                  <div className="metric-label">System Signal</div>
+                  <div style={{ marginTop:10, marginBottom:10 }}><SignalPill signal={synth.classification} size="lg" /></div>
+                  <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                    <div className="progress-track" style={{ flex:1 }}>
+                      <div className="progress-fill" style={{ width:`${Math.round((synth.confidence||0)*100)}%`, background:'var(--teal)' }} />
+                    </div>
+                    <span style={{ fontSize:12, fontWeight:700 }}>{Math.round((synth.confidence||0)*100)}%</span>
+                  </div>
+                </div>
+                <div className="card">
+                  <div className="metric-label">Agent Agreement</div>
+                  <div style={{ fontFamily:'var(--font-mono)', fontSize:22, fontWeight:800, marginTop:8, marginBottom:4 }}>{synth.agent_agreement || '—'}</div>
+                </div>
+                <div className="card">
+                  <div className="metric-label">RSI (14)</div>
+                  <div style={{ fontFamily:'var(--font-mono)', fontSize:28, fontWeight:800, marginTop:8 }}>{md.rsi_14 || '—'}</div>
+                </div>
+                <div className="card">
+                  <div className="metric-label">Data Quality</div>
+                  <div style={{ marginTop:10 }}>
+                    {synth.data_quality && <span className={`badge badge-${synth.data_quality === 'good' ? 'teal' : 'amber'}`} style={{ fontSize:14, padding:'6px 14px' }}>{synth.data_quality?.toUpperCase()}</span>}
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* ══ RESEARCH ══════════════════════════════════════════════════════ */}
+          {activeNav === 'research' && (
+            <>
+              <div style={{ display:'grid', gridTemplateColumns:'1.2fr 1fr', gap:20, marginBottom:24 }}>
+                {/* News Feed */}
+                <div className="card">
+                  <div style={{ fontWeight:700, fontSize:15, marginBottom:16 }}>
+                    Latest News — {md.symbol || selectedSym}
+                    {news.source === 'gnews' && <span className="badge badge-teal" style={{ marginLeft:8 }}>Live</span>}
+                  </div>
+                  <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+                    {(news.articles || []).slice(0, 6).map((a, i) => (
+                      <div key={i} style={{ borderBottom:'1px solid var(--border)', paddingBottom:14 }}>
+                        <div style={{ fontSize:14, fontWeight:600, lineHeight:1.4, marginBottom:6 }}>
+                          {a.url ? (
+                            <a href={a.url} target="_blank" rel="noopener noreferrer" style={{ color:'inherit', textDecoration:'none' }}>
+                              {a.title} <ExternalLink size={11} color="var(--text-muted)" />
+                            </a>
+                          ) : a.title}
+                        </div>
+                        <div style={{ fontSize:11, color:'var(--text-muted)' }}>
+                          {a.source} {a.publishedAt && `· ${new Date(a.publishedAt).toLocaleDateString('en-IN')}`}
+                          {a.is_fallback && ' · illustrative'}
+                        </div>
+                      </div>
+                    ))}
+                    {!(news.articles || []).length && (
+                      <div style={{ color:'var(--text-muted)', fontSize:13 }}>No news available. Run analysis to load.</div>
+                    )}
+                  </div>
+                </div>
+                {/* Investor Profile */}
+                <div className="card">
+                  <div style={{ fontWeight:700, fontSize:15, marginBottom:16 }}>Investor Profile</div>
+                  <div style={{ marginBottom:12 }}>
+                    <div style={{ fontWeight:700, fontSize:15 }}>{prof.name}</div>
+                    <div style={{ fontSize:13, color:'var(--teal)', fontWeight:600, marginTop:2 }}>{prof.riskTolerance} · {prof.investmentHorizon}</div>
+                  </div>
+                  <div style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:12 }}>Sector Exposure</div>
+                  {Object.entries(prof.sectorExposures || {}).map(([sec, val]) => (
+                    <div key={sec} style={{ marginBottom:10 }}>
+                      <div style={{ display:'flex', justifyContent:'space-between', fontSize:13, marginBottom:4 }}>
+                        <span>{sec}</span>
+                        <span style={{ fontWeight:700 }}>{val}%</span>
+                      </div>
+                      <div className="progress-track">
+                        <div className="progress-fill" style={{ width:`${val}%`, background: val > (prof.maxSectorConcentration || 25) ? 'var(--amber)' : 'var(--teal)' }} />
+                      </div>
+                    </div>
+                  ))}
+                  {prof.maxSectorConcentration && (
+                    <div style={{ marginTop:10, fontSize:12, color:'var(--text-muted)' }}>
+                      Max sector concentration: <strong>{prof.maxSectorConcentration}%</strong>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* ══ AGENT NETWORK ═════════════════════════════════════════════════ */}
+          {activeNav === 'agents' && (
+            <>
+              <div style={{ marginBottom:20, fontSize:13, color:'var(--text-secondary)' }}>
+                Three specialist agents run in parallel via <code style={{ background:'var(--surface)', padding:'2px 6px', borderRadius:4 }}>ThreadPoolExecutor</code>. Each produces an independent signal before synthesis.
+              </div>
+              <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:16, marginBottom:24 }}>
+                {Object.entries(agents).map(([key, agent]) => (
+                  <AgentCard key={key} agent={agent} onCitation={handleCitation} />
                 ))}
               </div>
-            </div>
-
-            {/* Synthesis Card */}
-            <div className="card" style={{ border:'1px solid var(--teal)', boxShadow:'0 0 0 1px var(--teal-light)' }}>
-              <div style={{ fontSize:10, fontWeight:700, color:'var(--teal)', textTransform:'uppercase', letterSpacing:'0.1em', marginBottom:6 }}>
-                SYNTHESIZED INTELLIGENCE
-              </div>
-              <div style={{ fontSize:20, fontWeight:800, marginBottom:4 }}>{synth.classification}</div>
-              <div style={{ fontSize:13, color:'var(--text-secondary)', lineHeight:1.6, marginBottom:16 }}>
-                {synth.summary}
-              </div>
-
-              <div style={{ background:'var(--bg)', borderRadius:'var(--radius-md)', padding:'14px 16px', marginBottom:16 }}>
-                <div style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:6 }}>
-                  Recommendation
-                </div>
-                <div style={{ fontSize:13, fontWeight:700, color:'var(--text-primary)' }}>{synth.action_recommendation}</div>
-              </div>
-
-              {/* Key reasons */}
-              {(synth.key_reasons || []).length > 0 && (
-                <div style={{ marginBottom:16 }}>
-                  <div style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:8 }}>Key Reasons</div>
-                  {synth.key_reasons.map((r, i) => (
-                    <div key={i} style={{ display:'flex', gap:8, alignItems:'flex-start', marginBottom:6 }}>
-                      <ChevronRight size={14} color="var(--teal)" style={{ marginTop:1, flexShrink:0 }} />
-                      <span style={{ fontSize:12, color:'var(--text-secondary)', lineHeight:1.5 }}>{r}</span>
+              {/* Synthesis summary */}
+              <div className="card" style={{ border:'1px solid var(--teal)' }}>
+                <div style={{ fontSize:11, fontWeight:700, color:'var(--teal)', textTransform:'uppercase', letterSpacing:'0.1em', marginBottom:10 }}>Synthesis Agent Output</div>
+                <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:16 }}>
+                  {[
+                    { label:'Classification', val: synth.classification },
+                    { label:'Confidence',      val: `${Math.round((synth.confidence||0)*100)}%` },
+                    { label:'Agent Agreement', val: synth.agent_agreement },
+                  ].map(({ label, val }) => (
+                    <div key={label} style={{ background:'var(--bg)', borderRadius:'var(--radius-md)', padding:'14px 16px' }}>
+                      <div style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:6 }}>{label}</div>
+                      <div style={{ fontSize:16, fontWeight:800, fontFamily:'var(--font-mono)' }}>{val || '—'}</div>
                     </div>
                   ))}
                 </div>
-              )}
-
-              {/* Portfolio impact */}
-              {synth.portfolio_impact && (
-                <div style={{ background:'var(--teal-light)', borderRadius:'var(--radius-sm)', padding:'12px 14px' }}>
-                  <div style={{ fontSize:11, fontWeight:700, color:'var(--teal-dark)', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:4 }}>Portfolio Impact</div>
-                  <div style={{ fontSize:12, color:'var(--teal-dark)', lineHeight:1.5 }}>{synth.portfolio_impact}</div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* ── Three Agent Cards ──────────────────────────────── */}
-          <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:16, marginBottom:24 }}>
-            {Object.entries(agents).map(([key, agent]) => (
-              <AgentCard key={key} agent={agent} onCitation={handleCitation} />
-            ))}
-          </div>
-
-          {/* ── Reasoning Trace + News ─────────────────────────── */}
-          <div style={{ display:'grid', gridTemplateColumns:'1.2fr 1fr', gap:20, marginBottom:24 }}>
-
-            {/* Reasoning Trace */}
-            <div className="card">
-              <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:14 }}>
-                <Terminal size={16} color="var(--teal)" />
-                <span style={{ fontWeight:700, fontSize:14 }}>Reasoning Trace</span>
+                {synth.summary && (
+                  <div style={{ marginTop:16, padding:'14px 16px', background:'var(--bg)', borderRadius:'var(--radius-md)', fontSize:13, color:'var(--text-secondary)', lineHeight:1.7 }}>
+                    {synth.summary}
+                  </div>
+                )}
               </div>
-              <div className="trace-terminal">
+            </>
+          )}
+
+          {/* ══ REASONING TRACE ═══════════════════════════════════════════════ */}
+          {activeNav === 'trace' && (
+            <div className="card">
+              <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:16 }}>
+                <Terminal size={16} color="var(--teal)" />
+                <span style={{ fontWeight:700, fontSize:15 }}>Reasoning Trace</span>
+                <span style={{ fontSize:12, color:'var(--text-muted)' }}>— Step-by-step agent execution log</span>
+              </div>
+              <div className="trace-terminal" style={{ minHeight:300 }}>
                 {(synth.reasoning_trace || []).map((log, i) => (
-                  <div key={i} style={{ display:'flex', gap:4 }}>
+                  <div key={i} style={{ display:'flex', gap:4, marginBottom:4 }}>
                     <span className="trace-time">{log.time}</span>
                     <span className={`trace-icon ${log.status === 'warning' ? 'trace-warning' : 'trace-success'}`}>
                       {log.status === 'warning' ? '⚠' : '✓'}
                     </span>
-                    <span style={{ color: log.status === 'warning' ? '#F59E0B' : '#E2E8F0', fontSize:12 }}>{log.event}</span>
+                    <span style={{ color: log.status === 'warning' ? '#F59E0B' : '#E2E8F0', fontSize:13 }}>{log.event}</span>
                   </div>
                 ))}
                 {!synth.reasoning_trace?.length && (
-                  <div style={{ color:'#6B7280' }}>Run analysis to see trace…</div>
+                  <div style={{ color:'#6B7280', fontSize:13 }}>Run analysis to see reasoning trace…</div>
                 )}
               </div>
             </div>
+          )}
 
-            {/* News Feed + User Profile */}
-            <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
-              {/* News */}
-              <div className="card">
-                <div style={{ fontWeight:700, fontSize:14, marginBottom:12 }}>
-                  Latest News — {md.symbol}
-                  {news.source === 'gnews' && <span className="badge badge-teal" style={{ marginLeft:8 }}>Live</span>}
-                </div>
-                <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
-                  {(news.articles || []).slice(0,3).map((a, i) => (
-                    <div key={i} style={{ borderBottom:'1px solid var(--border)', paddingBottom:10 }}>
-                      <div style={{ fontSize:13, fontWeight:600, lineHeight:1.4, marginBottom:4 }}>
-                        {a.url ? (
-                          <a href={a.url} target="_blank" rel="noopener noreferrer"
-                            style={{ color:'inherit', textDecoration:'none' }}>
-                            {a.title} <ExternalLink size={10} color="var(--text-muted)" />
-                          </a>
-                        ) : a.title}
-                      </div>
-                      <div style={{ fontSize:11, color:'var(--text-muted)' }}>
-                        {a.source} {a.publishedAt && `· ${new Date(a.publishedAt).toLocaleDateString('en-IN')}`}
-                        {a.is_fallback && ' · illustrative'}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Investor Profile */}
-              <div className="card" style={{ flex:1 }}>
-                <div style={{ fontWeight:700, fontSize:14, marginBottom:14 }}>Investor Profile</div>
-                <div style={{ marginBottom:10 }}>
-                  <div style={{ fontWeight:600, fontSize:13 }}>{prof.name}</div>
-                  <div style={{ fontSize:12, color:'var(--teal)', fontWeight:600 }}>{prof.riskTolerance} · {prof.investmentHorizon}</div>
-                </div>
-                <div style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:10 }}>
-                  Sector Exposure
-                </div>
-                {Object.entries(prof.sectorExposures || {}).slice(0,5).map(([sec, val]) => (
-                  <div key={sec} style={{ marginBottom:8 }}>
-                    <div style={{ display:'flex', justifyContent:'space-between', fontSize:12, marginBottom:3 }}>
-                      <span>{sec}</span>
-                      <span style={{ fontWeight:600 }}>{val}%</span>
-                    </div>
-                    <div className="progress-track">
-                      <div className="progress-fill" style={{ width:`${val}%`, background: val > (prof.maxSectorConcentration || 25) ? 'var(--amber)' : 'var(--teal)' }} />
-                    </div>
-                  </div>
-                ))}
-                {prof.maxSectorConcentration && (
-                  <div style={{ marginTop:8, fontSize:11, color:'var(--text-muted)' }}>
-                    Max sector concentration: <strong>{prof.maxSectorConcentration}%</strong>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* ── Performance Stats ──────────────────────────────── */}
-          {performance && (
+          {/* ══ PERFORMANCE ═══════════════════════════════════════════════════ */}
+          {activeNav === 'performance' && performance && (
             <div className="card">
-              <div style={{ fontWeight:700, fontSize:14, marginBottom:16 }}>Session Performance</div>
-              <div style={{ display:'grid', gridTemplateColumns:'repeat(5,1fr)', gap:16, marginBottom:20 }}>
+              <div style={{ fontWeight:700, fontSize:15, marginBottom:20 }}>Session Performance</div>
+              <div style={{ display:'grid', gridTemplateColumns:'repeat(5,1fr)', gap:16, marginBottom:24 }}>
                 {[
                   { label:'Total Sessions',     val: performance.summary?.total_sessions },
                   { label:'30d Signal Accuracy', val: `${performance.summary?.forward_return_30d_accuracy_pct}%` },
@@ -630,14 +685,12 @@ export default function Dashboard({ onBackToLanding }) {
                   { label:'Avg Latency',         val: `${performance.summary?.avg_total_latency_sec}s` },
                   { label:'Retrieval Latency',   val: `${performance.summary?.source_retrieval_avg_latency_ms}ms` },
                 ].map(({ label, val }) => (
-                  <div key={label} style={{ textAlign:'center', background:'var(--bg)', borderRadius:'var(--radius-md)', padding:'14px 10px' }}>
-                    <div style={{ fontSize:10, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:6 }}>{label}</div>
-                    <div style={{ fontFamily:'var(--font-mono)', fontSize:20, fontWeight:800 }}>{val ?? '—'}</div>
+                  <div key={label} style={{ textAlign:'center', background:'var(--bg)', borderRadius:'var(--radius-md)', padding:'16px 10px' }}>
+                    <div style={{ fontSize:10, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:8 }}>{label}</div>
+                    <div style={{ fontFamily:'var(--font-mono)', fontSize:22, fontWeight:800 }}>{val ?? '—'}</div>
                   </div>
                 ))}
               </div>
-
-              {/* Recent sessions table */}
               {(performance.recent_sessions || []).length > 0 && (
                 <div style={{ overflowX:'auto' }}>
                   <table style={{ width:'100%', borderCollapse:'collapse', fontSize:12 }}>
@@ -649,7 +702,7 @@ export default function Dashboard({ onBackToLanding }) {
                       </tr>
                     </thead>
                     <tbody>
-                      {performance.recent_sessions.slice(0,5).map(s => (
+                      {performance.recent_sessions.slice(0,10).map(s => (
                         <tr key={s.session_id} style={{ borderBottom:'1px solid var(--border)' }}>
                           <td style={{ padding:'10px 12px', fontFamily:'var(--font-mono)', color:'var(--text-muted)' }}>{s.session_id}</td>
                           <td style={{ padding:'10px 12px', fontWeight:700 }}>{s.symbol}</td>
@@ -668,6 +721,13 @@ export default function Dashboard({ onBackToLanding }) {
               )}
             </div>
           )}
+          {activeNav === 'performance' && !performance && (
+            <div className="card" style={{ textAlign:'center', padding:48 }}>
+              <div style={{ fontSize:13, color:'var(--text-muted)' }}>No performance data yet. Run an analysis first.</div>
+            </div>
+          )}
+
+        </div>
         </div>
       </div>
 

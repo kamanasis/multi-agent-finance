@@ -8,6 +8,12 @@ export default function Auth({ onBack }) {
   const [password, setPassword] = useState('');
   const [mode, setMode] = useState('login');
   const [message, setMessage] = useState('');
+  const [msgType, setMsgType] = useState('error'); // 'error' | 'success'
+
+  const showMsg = (text, type = 'error') => {
+    setMessage(text);
+    setMsgType(type);
+  };
 
   const handleAuth = async (e) => {
     e.preventDefault();
@@ -16,27 +22,35 @@ export default function Auth({ onBack }) {
 
     try {
       if (mode === 'signup') {
-        const { error } = await supabase.auth.signUp({ email, password });
+        const { data, error } = await supabase.auth.signUp({ email, password });
         if (error) throw error;
-        setMessage('Account created! Check your email for a confirmation link, then log in.');
+
+        // If session is immediately available, email confirmation is disabled — go to dashboard
+        if (data.session) {
+          window.dispatchEvent(new CustomEvent('login-success', { detail: data.session }));
+          return;
+        }
+
+        // Otherwise, email confirmation is required
+        showMsg('Check your inbox for a confirmation link, then log in here.', 'success');
         setMode('login');
+
       } else {
         const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
+        if (error) {
+          if (error.message.includes('Email not confirmed')) {
+            throw new Error('Please confirm your email first. Check your inbox for a confirmation link.');
+          }
+          throw error;
+        }
         window.dispatchEvent(new CustomEvent('login-success', { detail: data.session }));
       }
     } catch (err) {
-      setMessage(err.message || 'Authentication failed.');
+      showMsg(err.message || 'Authentication failed. Please try again.', 'error');
     } finally {
       setLoading(false);
     }
   };
-
-  const isError = message && (
-    message.toLowerCase().includes('error') ||
-    message.toLowerCase().includes('failed') ||
-    message.toLowerCase().includes('invalid')
-  );
 
   return (
     <div style={{
@@ -103,7 +117,7 @@ export default function Auth({ onBack }) {
                   type="password"
                   value={password}
                   onChange={e => setPassword(e.target.value)}
-                  placeholder="&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;"
+                  placeholder="Minimum 6 characters"
                   required
                   minLength={6}
                   style={{
@@ -121,8 +135,8 @@ export default function Auth({ onBack }) {
             {message && (
               <div style={{
                 padding: 12, borderRadius: 8, lineHeight: 1.5, fontSize: 13, fontWeight: 500,
-                background: isError ? '#FEE2E2' : '#ECFDF5',
-                color: isError ? '#DC2626' : '#059669'
+                background: msgType === 'error' ? '#FEE2E2' : '#ECFDF5',
+                color: msgType === 'error' ? '#DC2626' : '#059669'
               }}>
                 {message}
               </div>
