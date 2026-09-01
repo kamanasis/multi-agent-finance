@@ -1,4 +1,4 @@
-﻿<div align="center">
+<div align="center">
 
 # 🧠 FinAgent Intelligence
 ### **Multi-Agent Autonomous Financial Intelligence Platform**
@@ -10,6 +10,8 @@
     <img src="https://img.shields.io/badge/GitHub-Repository-181717?style=for-the-badge&logo=github&logoColor=white" />
   </a>
 </p>
+
+<p>🌐 <strong>Live Application: <a href="https://multi-agent-finance-theta.vercel.app/">https://multi-agent-finance-theta.vercel.app/</a></strong></p>
 
 <img src="https://img.shields.io/badge/Python_3.11-3776AB?style=for-the-badge&logo=python&logoColor=white" />
 <img src="https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white" />
