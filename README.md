@@ -1,4 +1,4 @@
-﻿<div align="center">
+<div align="center">
 
 # 🧠 FinAgent Intelligence
 ### **Multi-Agent Autonomous Financial Intelligence Platform**
@@ -8,6 +8,9 @@
 <p>
   <a href="https://github.com/kamanasis/multi-agent-finance">
     <img src="https://img.shields.io/badge/GitHub-Repository-181717?style=for-the-badge&logo=github&logoColor=white" />
+  </a>
+  <a href="https://forms.gle/2zRg4EzYhM1G3Sdr8">
+    <img src="https://img.shields.io/badge/Submit_Feedback-4285F4?style=for-the-badge&logo=google-forms&logoColor=white" />
   </a>
 </p>
 
