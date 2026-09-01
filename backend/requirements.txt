@@ -7,3 +7,4 @@ python-dotenv>=1.0.0
 yfinance>=0.2.38
 pandas>=2.0.0
 groq>=0.9.0
+scikit-learn>=1.2.0
