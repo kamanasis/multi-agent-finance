@@ -17,7 +17,7 @@
 <img src="https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white" />
 <img src="https://img.shields.io/badge/Groq_Qwen_2.5-FF6B35?style=for-the-badge&logo=openai&logoColor=white" />
 <img src="https://img.shields.io/badge/HuggingFace_FinBERT-FFD21E?style=for-the-badge&logo=huggingface&logoColor=black" />
-<img src="https://img.shields.io/badge/MongoDB_Atlas-47A248?style=for-the-badge&logo=mongodb&logoColor=white" />
+<img src="https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white" />
 <img src="https://img.shields.io/badge/TF--IDF_RAG-8E44AD?style=for-the-badge&logo=databricks&logoColor=white" />
 <img src="https://img.shields.io/github/actions/workflow/status/kamanasis/multi-agent-finance/ci.yml?branch=main&label=CI%2FCD&style=for-the-badge" />
 <img src="https://img.shields.io/badge/Hackverse-Rapid_Round-FFD700?style=for-the-badge" />
@@ -88,7 +88,7 @@ graph TB
     subgraph CLIENT["🖥️ Client Layer — React 19 + Vite"]
         UI["Dashboard Components"]
         LP["Landing Page"]
-        AUTH["Auth (MongoDB JWT)"]
+        AUTH["Auth (Supabase Auth)"]
         RECHARTS["Recharts Visualization"]
     end
 
@@ -121,7 +121,7 @@ graph TB
     end
 
     subgraph STORAGE["💾 Storage Layer"]
-        MONGO["MongoDB Atlas\nUser Accounts · JWT Auth"]
+        SUPA["Supabase\nUser Accounts · Auth"]
         METRICS["Session Metrics\nmetrics_logger.py"]
     end
 
@@ -131,7 +131,7 @@ graph TB
     FILINGS --> INGEST --> EMBED --> VECTOR --> SEARCH --> FUND
     TECH & FUND & SENT --> SYNTH
     SYNTH --> API
-    AUTH --> MONGO
+    AUTH --> SUPA
 
     classDef clientStyle fill:#0f2a3a,stroke:#00C9A7,color:#fff
     classDef apiStyle fill:#1a2a1a,stroke:#35D07F,color:#fff
@@ -396,25 +396,15 @@ flowchart LR
 ```mermaid
 sequenceDiagram
     participant UI as 🖥️ React Frontend
-    participant API as ⚙️ FastAPI Auth Router
-    participant BCRYPT as 🔒 bcrypt
-    participant MONGO as 🗄️ MongoDB Atlas
-    participant JWT as 🎟️ python-jose JWT
-
-    UI->>API: POST /api/auth/register {email, password}
-    API->>BCRYPT: hashpw(password, gensalt())
-    BCRYPT-->>API: hashed_password
-    API->>MONGO: insert {email, hashed_password, created_at}
-    API-->>UI: {message: "Registration successful"}
-
-    UI->>API: POST /api/auth/login {email, password}
-    API->>MONGO: find_one({email})
-    API->>BCRYPT: checkpw(plain, hashed)
-    BCRYPT-->>API: true
-    API->>JWT: encode({sub: email}, SECRET_KEY, HS256, expires 7d)
-    JWT-->>API: access_token
-    API-->>UI: {access_token, token_type: "bearer"}
-    UI->>UI: localStorage.setItem token
+    participant SUPA as ⚡ Supabase Auth
+    
+    UI->>SUPA: signUp({email, password})
+    SUPA-->>UI: session & user data
+    
+    UI->>SUPA: signInWithPassword({email, password})
+    SUPA-->>UI: session & user data
+    
+    UI->>UI: Supabase SDK handles local session/token storage
 ```
 
 ---
@@ -461,9 +451,7 @@ graph TD
 | **Groq API (Qwen 2.5 32B)** | Agent LLM inference |
 | **HuggingFace FinBERT** | `ProsusAI/finbert` — financial sentiment NLP |
 | **yfinance** | Market data — OHLCV, indicators |
-| **pymongo** | MongoDB Atlas connection |
-| **bcrypt** | Password hashing (raw, not passlib) |
-| **python-jose** | JWT token encoding/decoding |
+| **Supabase-JS** | Supabase Auth (Frontend) |
 | **TF-IDF (numpy)** | RAG semantic retrieval engine |
 
 ### Data Providers — News Waterfall
@@ -481,8 +469,6 @@ graph TD
 | Method | Endpoint | Description |
 |:---:|:---|:---|
 | `GET` | `/` | Health check |
-| `POST` | `/api/auth/register` | Register new user |
-| `POST` | `/api/auth/login` | Login + receive JWT |
 | `POST` | `/api/analyze` | Full multi-agent pipeline |
 | `GET` | `/api/profile` | Get/set investor risk profile |
 | `GET` | `/api/documents` | List RAG document corpus |
@@ -500,8 +486,7 @@ Rapid_Round_Hackverse/
 │
 ├── 🐍 backend/
 │   ├── main.py                      # FastAPI app + router registration
-│   ├── auth.py                      # MongoDB JWT auth (bcrypt + python-jose)
-│   ├── agents_specialists.py        # Technical · Fundamental · Sentiment agents
+│   │   ├── agents_specialists.py        # Technical · Fundamental · Sentiment agents
 │   ├── agents_synthesis.py          # Synthesis Agent + conflict resolution
 │   ├── rag_retriever.py             # TF-IDF DocumentStore + semantic search
 │   ├── data_market.py               # MarketDataProvider (yfinance adapter)
@@ -512,10 +497,10 @@ Rapid_Round_Hackverse/
 │
 ├── ⚛️ frontend/
 │   └── src/
-│       ├── App.jsx                  # Root + auth state (localStorage JWT)
+│       ├── App.jsx                  # Root + auth state (Supabase Session)
 │       ├── index.css                # Dark-first design system
 │       └── components/
-│           ├── Auth.jsx             # Login / Sign Up with MongoDB JWT
+│           ├── Auth.jsx             # Login / Sign Up with Supabase Auth
 │           ├── Dashboard.jsx        # Main analysis dashboard + charts
 │           ├── LandingPage.jsx      # Marketing landing page
 │           └── Documentation.jsx   # In-app architecture docs
@@ -539,8 +524,6 @@ GROQ_API_KEY=gsk_your_key
 HF_TOKEN=hf_your_token
 FINNHUB_KEY=your_finnhub_key
 GNEWS_API_KEY=your_gnews_key
-MONGODB_URI=mongodb+srv://user:pass@cluster0.mongodb.net/?appName=Cluster0
-JWT_SECRET_KEY=your-32-char-secret
 ```
 
 ```bash
@@ -548,6 +531,13 @@ python -m uvicorn main:app --host 127.0.0.1 --port 8080
 ```
 
 ### Frontend
+
+**`frontend/.env`**
+```env
+VITE_SUPABASE_URL=your_supabase_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
+
 ```bash
 cd frontend
 npm install
@@ -567,7 +557,7 @@ npm run dev
 | ✅ Personalized Synthesis | Same stock → different signal per risk profile |
 | ✅ Conflict Detection | Agent disagreement surfaced, confidence reduced |
 | ✅ Degraded Data Handling | Waterfall fallbacks + dataQuality flags |
-| ✅ JWT Auth (MongoDB) | Custom bcrypt + python-jose — no third-party SaaS |
+| ✅ Serverless Auth (Supabase) | Native Supabase SDK integration with zero backend auth overhead |
 | ✅ Performance Metrics | Per-session latency, agreement rate, signal logging |
 | ✅ CI/CD | GitHub Actions on every push to main |
 
